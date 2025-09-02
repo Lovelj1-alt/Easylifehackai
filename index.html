@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0b0b0c">
+  <title>Lifehackai — Easy Mode</title>
+  <link rel="icon" href="/assets/favicon.ico">
+  <link rel="apple-touch-icon" href="/assets/logo-192.png">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/styles.css">
+  <meta name="description" content="Lifehackai: your pocket studio for prompt packs, side-hustle playbooks, and one-tap AI helpers.">
+</head>
+<body>
+  <header class="app-header">
+    <img src="/assets/logo.svg" alt="Easy Lifehack AI logo" class="logo"/>
+    <h1>Lifehackai</h1>
+    <button id="easyBtn" class="easy-btn" aria-label="Easy Button">Easy</button>
+  </header>
+  <main>
+    <section class="hero card">
+      <h2>Ship ideas. Faster.</h2>
+      <p>Your pocket studio for prompt packs, side-hustle playbooks, and one-tap AI helpers. Install to your iPhone as an app (Share → Add to Home Screen).</p>
+      <div class="cta-row">
+        <button id="installBtn" class="primary">Install App</button>
+        <a class="secondary" href="#how-to-deploy">Deploy to Netlify</a>
+      </div>
+    </section>
+    <section class="search-row">
+      <input id="search" type="search" placeholder="Search prompt packs…" autocomplete="off" />
+    </section>
+    <section aria-live="polite" aria-busy="false">
+      <h3>Prompt Packs</h3>
+      <div id="packsGrid" class="grid"></div>
+    </section>
+    <section class="card" id="packDetail" hidden>
+      <button id="backToGrid" class="ghost">← Back</button>
+      <h3 id="packTitle"></h3>
+      <p id="packTagline" class="muted"></p>
+      <div class="pillbar" id="packMeta"></div>
+      <article id="packContent"></article>
+      <div class="copy-actions">
+        <button id="copyAll" class="primary">Copy All</button>
+        <button id="downloadTxt" class="secondary">Download .txt</button>
+      </div>
+    </section>
+    <section class="card" id="chatSection">
+      <h3>Quick Chat</h3>
+      <p class="muted">Optional server chat via Netlify Function. Add <code>OPENAI_API_KEY</code> in Netlify → Environment variables.</p>
+      <div class="chat-row">
+        <textarea id="chatInput" rows="3" placeholder="Ask Lifehackai to draft a 7-day email sequence for my Etsy store…"></textarea>
+        <button id="sendChat" class="primary">Send</button>
+      </div>
+      <div id="chatLog" class="chat-log"></div>
+    </section>
+    <section class="card" id="how-to-deploy">
+      <h3>Deploy from GitHub</h3>
+      <ol>
+        <li>Create a GitHub repo and upload this folder.</li>
+        <li>In Netlify: Add new site → Import from Git → choose your repo.</li>
+        <li>Build settings: <strong>Build command</strong> (empty), <strong>Publish directory</strong> <code>/</code>.</li>
+        <li>Add env var <code>OPENAI_API_KEY</code> (and optional <code>OPENAI_MODEL</code>).</li>
+      </ol>
+    </section>
+  </main>
+  <footer class="muted center">
+    <p>© 2025 Lifehackai. PWA-ready. <a href="https://app.netlify.com" target="_blank" rel="noopener">Deploy</a></p>
+  </footer>
+  <script type="module" src="/script.js"></script>
+</body>
+</html>
