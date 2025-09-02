@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Easy LifeHack AI — with Google Drive Sync</title>
+<meta name="description" content="Ask anything. Get doable, step-by-step help. Save hacks. Find local pros. Sync backups with Google Drive.">
+<meta name="application-name" content="Easy LifeHack AI">
+<meta name="copyright" content="© 2025 Jennifer Lovell. All rights reserved.">
+<style>
+:root{--bg:#f7fbff; --ink:#0f1b2a; --muted:#5a6b7e; --accent:#0a7ea4; --accent2:#0fb7a4; --card:#ffffff}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial}
+header{position:sticky;top:0;z-index:10;background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;padding:14px 16px;display:flex;gap:10px;align-items:center}
+header h1{margin:0;font-size:18px}
+.smallBtn{font-size:12px;padding:6px 10px;margin-left:auto;border-radius:8px;background:transparent;border:1px solid #fff;color:#fff}
+nav{display:flex;gap:8px;padding:8px;background:#e9f6fb;position:sticky;top:56px;z-index:9;overflow:auto}
+nav button{border:none;background:var(--card);color:var(--accent);padding:10px 12px;border-radius:10px;font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+nav button.active{background:var(--accent);color:#fff}
+main{padding:12px}
+.section{display:none}
+.section.active{display:block}
+.card{background:var(--card);border-radius:12px;padding:12px;margin:10px 0;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.card h3{margin:0 0 8px 0}
+.input,textarea,select{width:100%;padding:10px;border:1px solid #ddd;border-radius:10px;margin:6px 0 12px}
+button.primary{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:700}
+button.ghost{background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:10px;padding:8px 12px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row>div{flex:1}
+.small{font-size:12px;color:var(--muted)}
+.badge{background:#e9f6fb;color:var(--accent);font-size:12px;padding:4px 8px;border-radius:999px}
+.footer{padding:32px 0 60px;color:var(--muted);text-align:center}
+.footer .tiny{font-size:11px;color:#8ca0b4}
+.easy-mode body{font-size:18px}
+.easy-mode .card ol li:nth-child(n+4){display:none}
+.easy-mode #settings{display:none !important}
+.notice{background:#fff7e6;border:1px solid #ffd89c;color:#8c5a00;padding:8px 10px;border-radius:8px;margin:8px 0;font-size:12px}
+#gStatus{font-size:12px;color:#0a7ea4}
+</style>
+</head>
+<body>
+<header>
+  <h1>Easy LifeHack AI</h1>
+  <button id="easyModeBtn" class="smallBtn">Easy Mode</button>
+</header>
+
+<nav>
+  <button class="tab active" data-section="ask">Ask</button>
+  <button class="tab" data-section="library">Library</button>
+  <button class="tab" data-section="cloud">Cloud</button>
+  <button class="tab" data-section="settings">Settings</button>
+</nav>
+
+<main>
+  <!-- Ask -->
+  <section id="ask" class="section active">
+    <div class="card">
+      <h3>Ask anything</h3>
+      <textarea id="askText" class="input" rows="5" placeholder="e.g., My sink is clogged. What can I try?"></textarea>
+      <div class="row">
+        <button class="primary" id="askBtn">Get Steps</button>
+        <button class="ghost" id="prosBtn">Nearby Pros</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Answer</h3>
+      <div id="answer" class="small">Your step-by-step instructions will appear here.</div>
+      <div class="row">
+        <button class="primary" id="saveBtn">Save to Library</button>
+        <button class="ghost" id="thumbUp">👍</button>
+        <button class="ghost" id="thumbDown">👎</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Library -->
+  <section id="library" class="section">
+    <div class="card">
+      <h3>Saved Hacks</h3>
+      <div id="libList"></div>
+      <div class="row">
+        <button class="ghost" id="exportBtn">Export (JSON)</button>
+        <input type="file" id="importInput" accept="application/json" />
+      </div>
+    </div>
+  </section>
+
+  <!-- Cloud (Google Drive) -->
+  <section id="cloud" class="section">
+    <div class="card">
+      <h3>Google Drive Sync</h3>
+      <div class="notice">To use Drive sync, you need a Google Cloud project. Replace <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_API_KEY</code> below with your credentials, then redeploy.</div>
+      <div class="row">
+        <button id="gSignIn" class="primary">Sign in with Google</button>
+        <span id="gStatus">Not signed in</span>
+      </div>
+      <div class="row">
+        <button id="gBackup" class="ghost">Backup to Drive</button>
+        <button id="gRestore" class="ghost">Restore from Drive</button>
+      </div>
+      <div class="small">Backups are stored as <code>easy_lifehack_ai_backup.json</code> in your Drive root (or app data).</div>
+    </div>
+  </section>
+
+  <!-- Settings -->
+  <section id="settings" class="section">
+    <div class="card">
+      <h3>AI Settings</h3>
+      <p class="small">Optional: add your OpenAI API key to enable AI answers. Otherwise, the app uses an offline fallback.</p>
+      <input id="apiKey" class="input" placeholder="OpenAI API Key (optional)">
+      <button class="primary" id="saveSettings">Save Settings</button>
+    </div>
+    <div class="card">
+      <h3>Install</h3>
+      <p class="small">On iPhone Safari: share icon → “Add to Home Screen”.</p>
+    </div>
+  </section>
+</main>
+
+<div class="footer">
+  <div class="tiny">© 2025 Jennifer Lovell. Easy LifeHack AI™ — All rights reserved.</div>
+  <div class="tiny">Brand & concept are the intellectual property of Jennifer Lovell.</div>
+</div>
+
+<script>
+const $ = s=>document.querySelector(s); const $$ = s=>Array.from(document.querySelectorAll(s));
+
+// Tabs
+$$('.tab').forEach(btn=>btn.addEventListener('click',()=>{
+  $$('.tab').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
+  $$('.section').forEach(sec=>sec.classList.remove('active'));
+  $('#'+btn.dataset.section).classList.add('active');
+}));
+
+// Easy Mode
+let easyMode=false;
+$('#easyModeBtn').addEventListener('click',()=>{
+  easyMode=!easyMode;
+  document.documentElement.classList.toggle('easy-mode', easyMode);
+  $('#easyModeBtn').innerText = easyMode ? 'Exit Easy Mode' : 'Easy Mode';
+});
+
+// IndexedDB (minimal)
+const DB_NAME='easy_lifehack_ai_gdrive_single'; const DB_VERSION=1; let dbPromise=null;
+function openDB(){ if(dbPromise) return dbPromise;
+  dbPromise=new Promise((resolve,reject)=>{
+    const req=indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded=()=>{
+      const db=req.result;
+      if(!db.objectStoreNames.contains('hacks')) db.createObjectStore('hacks',{keyPath:'id',autoIncrement:true});
+      if(!db.objectStoreNames.contains('settings')) db.createObjectStore('settings',{keyPath:'key'});
+    };
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+  }); return dbPromise;
+}
+async function dbAdd(s,v){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction(s,'readwrite');const r=tx.objectStore(s).add(v);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+async function dbPut(s,v){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction(s,'readwrite');tx.objectStore(s).put(v);tx.oncomplete=()=>res(true);tx.onerror=()=>rej(tx.error);});}
+async function dbGetAll(s){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction(s,'readonly');const r=tx.objectStore(s).getAll();r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+async function dbDelete(s,k){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction(s,'readwrite');tx.objectStore(s).delete(k);tx.oncomplete=()=>res(true);tx.onerror=()=>rej(tx.error);});}
+
+// Offline fallback steps
+function offlineSteps(text){
+  if(!text) return [];
+  const clean = text.replace(/\\s+/g,' ').trim();
+  if(!clean) return [];
+  let parts = clean.split(/[\\.\\!\\?]/).map(s=>s.trim()).filter(Boolean);
+  if(parts.length<2){
+    return [
+      'Gather simple tools/supplies you likely have at home.',
+      'Try the safest, least‑invasive fix first.',
+      'Test the result, then escalate or contact a local pro.'
+    ];
+  }
+  return parts.slice(0,8).map(s=>s.charAt(0).toUpperCase()+s.slice(1));
+}
+function renderSteps(steps){ return steps.length?('<ol>'+steps.map(s=>`<li>${s}</li>`).join('')+'</ol>'):'<p>No steps yet.</p>'; }
+
+// Ask
+$('#askBtn').addEventListener('click', async ()=>{
+  const q = $('#askText').value.trim();
+  if(!q){ alert('Type a question first.'); return; }
+  $('#answer').innerHTML = '<p>Thinking…</p>';
+
+  const apiKey = $('#apiKey').value.trim();
+  let steps=[];
+  try{
+    if(apiKey){
+      const resp = await fetch('https://api.openai.com/v1/chat/completions',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+        body: JSON.stringify({
+          model:'gpt-4o-mini',
+          messages:[
+            {role:'system',content:'You are Easy LifeHack AI. Give short, safe, step-by-step instructions a beginner can follow. Mention risks and when to call a professional.'},
+            {role:'user',content:q}
+          ],
+          temperature:0.2
+        })
+      });
+      const json = await resp.json();
+      const text = json?.choices?.[0]?.message?.content || '';
+      const lines = text.split(/\\n|•|- |\\d+\\./).map(s=>s.trim()).filter(Boolean);
+      steps = lines.slice(0,10);
+    }else{
+      steps = offlineSteps(q);
+    }
+  }catch(e){ console.error(e); steps = offlineSteps(q); }
+
+  $('#answer').innerHTML = renderSteps(steps);
+
+  const record = {question:q, steps, createdAt:new Date().toISOString(), notes:'', thumbs:null};
+  $('#saveBtn').onclick = async ()=>{ await dbAdd('hacks', record); await refreshLibrary(); alert('Saved ✅'); };
+  $('#thumbUp').onclick = ()=>{ record.thumbs='up'; alert('Thanks!'); };
+  $('#thumbDown').onclick = ()=>{ record.thumbs='down'; alert('Thanks!'); };
+});
+
+// Nearby pros (Google Maps)
+$('#prosBtn').addEventListener('click', ()=>{
+  const q = ($('#askText').value.trim() || 'handyman') + ' near me';
+  const url = 'https://www.google.com/maps/search/'+encodeURIComponent(q);
+  window.open(url,'_blank');
+});
+
+// Library rendering
+async function refreshLibrary(){
+  const data = await dbGetAll('hacks');
+  if(!data.length){ $('#libList').innerHTML = '<p class="small">No saved hacks yet.</p>'; return; }
+  $('#libList').innerHTML = data.map(r=>`
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <strong>${r.question}</strong>
+        <span class="badge">${new Date(r.createdAt).toLocaleString()}</span>
+      </div>
+      ${renderSteps(r.steps)}
+      <textarea class="input libNote" data-id="${r.id}" placeholder="Add notes…">${r.notes||''}</textarea>
+      <div class="row">
+        <button class="ghost delBtn" data-id="${r.id}">Delete</button>
+        <button class="primary saveNoteBtn" data-id="${r.id}">Save Notes</button>
+      </div>
+    </div>
+  `).join('');
+
+  document.querySelectorAll('.delBtn').forEach(b=>b.addEventListener('click', async ()=>{
+    const id = Number(b.dataset.id); await dbDelete('hacks', id); refreshLibrary();
+  }));
+  document.querySelectorAll('.saveNoteBtn').forEach(b=>b.addEventListener('click', async ()=>{
+    const id = Number(b.dataset.id);
+    const noteEl = document.querySelector('.libNote[data-id="'+id+'"]');
+    const all = await dbGetAll('hacks');
+    const rec = all.find(x=>x.id===id);
+    if(rec){ rec.notes = noteEl.value; await dbPut('hacks', rec); alert('Saved.'); }
+  }));
+}
+refreshLibrary();
+
+// Export / Import (local files)
+$('#exportBtn').addEventListener('click', async ()=>{
+  const hacks = await dbGetAll('hacks');
+  const blob = new Blob([JSON.stringify({hacks},null,2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'easy_lifehack_ai_backup.json'; a.click();
+});
+$('#importInput').addEventListener('change', async (e)=>{
+  const file = e.target.files[0]; if(!file) return;
+  const text = await file.text();
+  const data = JSON.parse(text||'{}');
+  if(Array.isArray(data.hacks)){
+    for(const h of data.hacks){ delete h.id; await dbAdd('hacks', h); }
+    await refreshLibrary(); alert('Imported ✅');
+  } else { alert('Invalid file.'); }
+});
+
+// ===== Google Drive Sync =====
+const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com'; // <-- replace
+const GOOGLE_API_KEY  = 'YOUR_GOOGLE_API_KEY'; // <-- replace
+const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+
+let gToken = null;
+
+function updateGStatus(){
+  $('#gStatus').textContent = gToken ? 'Signed in' : 'Not signed in';
+}
+
+async function gapiLoad() {
+  return new Promise((resolve,reject)=>{
+    if (window.gapi) return resolve();
+    const s = document.createElement('script');
+    s.src = 'https://apis.google.com/js/api.js';
+    s.onload = ()=>resolve();
+    s.onerror = ()=>reject(new Error('Failed to load gapi'));
+    document.head.appendChild(s);
+  });
+}
+
+async function initGapi() {
+  await gapiLoad();
+  return new Promise((resolve) => {
+    window.gapi.load('client:picker', async () => {
+      await gapi.client.init({
+        apiKey: GOOGLE_API_KEY,
+        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
+      });
+      resolve();
+    });
+  });
+}
+
+async function ensureAuth() {
+  if (gToken) return gToken;
+  const tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: SCOPES,
+    callback: (t)=>{ gToken = t; gapi.client.setToken(t); updateGStatus(); }
+  });
+  tokenClient.requestAccessToken({prompt: 'consent'});
+  return new Promise((resolve)=>{
+    const iv = setInterval(()=>{
+      if(gToken){ clearInterval(iv); resolve(gToken); }
+    }, 200);
+  });
+}
+
+$('#gSignIn').addEventListener('click', async ()=>{
+  try{
+    await initGapi(); await ensureAuth();
+    alert('Signed in to Google ✅');
+  }catch(e){ console.error(e); alert('Google sign-in failed'); }
+});
+
+// Backup to Drive
+$('#gBackup').addEventListener('click', async ()=>{
+  try{
+    await initGapi(); await ensureAuth();
+    const hacks = await dbGetAll('hacks');
+    const fileContent = JSON.stringify({hacks}, null, 2);
+    const metadata = {
+      name: 'easy_lifehack_ai_backup.json',
+      mimeType: 'application/json'
+    };
+    const form = new FormData();
+    const blob = new Blob([JSON.stringify(metadata)], {type: 'application/json'});
+    form.append('metadata', blob);
+    form.append('file', new Blob([fileContent], {type: 'application/json'}));
+    const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + gToken.access_token },
+      body: form
+    });
+    if(!res.ok) throw new Error('Upload failed');
+    alert('Backed up to Google Drive ✅');
+  }catch(e){ console.error(e); alert('Backup failed: ' + e.message); }
+});
+
+// Restore from Drive (search for our file name and download newest)
+$('#gRestore').addEventListener('click', async ()=>{
+  try{
+    await initGapi(); await ensureAuth();
+    const q = "name = 'easy_lifehack_ai_backup.json' and trashed = false";
+    const list = await gapi.client.drive.files.list({ q, orderBy: 'modifiedTime desc', pageSize: 1, fields: 'files(id,name,modifiedTime)' });
+    const file = list.result.files?.[0];
+    if(!file){ alert('No backup found.'); return; }
+    const dl = await fetch('https://www.googleapis.com/drive/v3/files/'+file.id+'?alt=media', {
+      headers: { 'Authorization': 'Bearer ' + gToken.access_token }
+    });
+    if(!dl.ok) throw new Error('Download failed');
+    const json = await dl.json();
+    if(Array.isArray(json.hacks)){
+      for(const h of json.hacks){ delete h.id; await dbAdd('hacks', h); }
+      await refreshLibrary();
+      alert('Restored from Drive ✅');
+    } else {
+      alert('Backup file is invalid');
+    }
+  }catch(e){ console.error(e); alert('Restore failed: ' + e.message); }
+});
+
+// Load Google Identity Services
+(function loadGIS(){
+  const s = document.createElement('script');
+  s.src = 'https://accounts.google.com/gsi/client';
+  document.head.appendChild(s);
+})();
+
+updateGStatus();
+</script>
+</body>
+</html>
